@@ -42,14 +42,14 @@
         #{"Dave" "Brad"}
         #{"Jeff" "Stewart"}
         #{"Angie" "Brian"}
-        ;; #{"John" "Annie"}
+        #{"John" "Annie"} ;;
         #{"Ian" "Drew"}]
     12 [#{"Phillip" "Angie"}
         #{"Paul" "Stewart"}
         #{"Dave" "Annie"}
         #{"Jeff" "John"}
         #{"Ian" "Brad"}
-        ;; #{"Kris" "Brian"}
+        #{"Kris" "Brian"} ;;
         #{"Drew" "Mike"}]}))
 
 
@@ -59,9 +59,8 @@
 (defn can-fit? [matchup [_ week-matchups]]
   (not (already-exists? matchup week-matchups)))
 
-(defn find-week-for [matchup schedule]
-  (first
-   (for [[week-number _ :as week] schedule :when (can-fit? matchup week)] week-number)))
+(defn find-weeks-for [matchup schedule]
+  (for [[week-number _ :as week] schedule :when (can-fit? matchup week)] week-number))
 
 (defn schedule-matchups [needed-matchups current-schedule]
   ;; first week not full
@@ -75,6 +74,8 @@
   ;; first matchup
   ;; first week it can go in
 
+  ;; (if (> (count needed-matchups) 75)
+  ;; (println "needed>" (count needed-matchups)))
 
   (if-let [needed-matchup (first needed-matchups)]
     ;; (if-let [fit-week (first (filter (partial can-fit-matchup? needed-matchup) current-schedule))]
@@ -82,10 +83,15 @@
     ;; (if-let [fit-week (first (keep (partial can-fit-matchup? needed-matchup) current-schedule))]
     ;; (if-let [fit-week (some (partial can-fit-matchup? needed-matchup) current-schedule)]
     ;; (if-let [fit-week (first (for [[week-number week-matchups] current-schedule :when ()] week-number))]
-    (if-let [fit-week (find-week-for needed-matchup current-schedule)]
-      (schedule-matchups (rest needed-matchups) (update current-schedule fit-week #(conj % needed-matchup)))
-      current-schedule)
-    current-schedule))
+    ;; (if-let [weeks (find-weeks-for needed-matchup current-schedule)]
+    (first
+     (let [weeks (find-weeks-for needed-matchup current-schedule)]
+       (for [week weeks
+             :let [schedule (schedule-matchups (rest needed-matchups) (update current-schedule week #(conj % needed-matchup)))]
+             :when schedule]
+         (do (println ">>") schedule))))
+    ;; (schedule-matchups (rest needed-matchups) (update current-schedule fit-week #(conj % needed-matchup)))
+    current-schedule
 
 (defn -main
   [& args]
