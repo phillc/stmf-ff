@@ -1,9 +1,8 @@
 (ns stmf-ff.core
-  (:require [clojure.math.combinatorics :as combinatorics]
-            [clojure.set :refer [difference
+  (:require [clojure.set :refer [difference
                                  intersection]]))
 
-(def managers
+(def seeded-managers
   ["Paul"
    "Dave"
    "Angie"
@@ -22,7 +21,6 @@
 
 (def family-matchups
   [#{"Phillip" "Angie"}
-   #{"Paul" "Stewart"}
    #{"Dave" "Annie"}
    #{"Jeff" "John"}
    #{"Drew" "Mike"}])
@@ -72,7 +70,7 @@
 (def league-weeks 13)
 
 ;; (defn create-round [size remaining-weeks]
-  ;; first-half)
+;; first-half)
 ;; )
 
 (defn rotate [coll]
@@ -86,54 +84,62 @@
       result
       (let [first-half (take (/ size 2) seeds)
             second-half (reverse (drop (/ size 2) seeds))]
-            (recur
-             (concat [(first seeds)] (rotate (rest seeds)))
-             (dec remaining-rounds)
-             (conj result (map vector first-half second-half)))))))
-
-(defn print-schedule [schedule]
-  (doseq [week schedule]
-    (println week)))
+        (recur
+         (concat [(first seeds)] (rotate (rest seeds)))
+         (dec remaining-rounds)
+         (conj result (map vector first-half second-half)))))))
 
 (defn matchups-included-in [matchups week]
   (count (intersection (set matchups) (set week))))
 
-(defn all-families? [week]
-  (= (count family-matchups) (matchups-included-in family-matchups week)))
+;; (defn all-families? [week]
+;;   (= (count family-matchups) (matchups-included-in family-matchups week)))
 
-(defn families-in-one-week? [schedule]
-  (some (fn [week] (all-families? week)) schedule))
+;; (defn families-in-one-week? [schedule]
+;;   (some (fn [week] (all-families? week)) schedule))
 
 (defn insert-managers [managers week]
   (set (replace managers week)))
+
+(defn manager-schedule [managers schedule]
+  (map #(map (partial insert-managers managers) %) schedule))
+
+(defn possible-schedules [seeded-schedule]
+  (loop [managers seeded-managers
+         remaining-rotations (count seeded-managers)
+         result []]
+    (let [schedule (manager-schedule managers seeded-schedule)]
+      (if (zero? remaining-rotations)
+        result
+        (recur
+         (into [] (rotate managers))
+         (dec remaining-rotations)
+         (conj result schedule))))))
+
+(defn print-schedule [schedule]
+  (doseq [[week-number week-matchups] (map vector (drop 1 (range)) schedule)]
+    (let [number-of-family (matchups-included-in family-matchups week-matchups)
+          number-of-rivalries (matchups-included-in rival-matchups week-matchups)
+          flag (if (> number-of-family 2) "******" "")]
+      (println week-number week-matchups number-of-family number-of-rivalries flag))))
 
 (defn -main
   [& args]
   ;; check all rivalries and families are in managers (check typos)
 
-  (let [schedule (round-robin-schedule (count managers) league-weeks)
-        manager-schedule (map #(map (partial insert-managers managers) %) schedule)]
+  (let [rr-schedule (round-robin-schedule (count seeded-managers) league-weeks)
+        schedules (possible-schedules rr-schedule)]
 
-    (print-schedule schedule)
-    (println "*********")
-    (println "manager-schedule")
-    (print-schedule manager-schedule)
-    (println "*********")
-    (println (families-in-one-week? manager-schedule)))
-  )
-;; (let [all-matchups (map set (combinatorics/combinations managers 2))
-;;       existing-matchups (reduce concat (map second set-schedule))
-;;       remaining-matchups (difference (set all-matchups) (set existing-matchups))]
-;;   (println "all-matchups" (count all-matchups) ":" all-matchups)
-;;   (println "****")
-;;   (println "existing matchups" (count existing-matchups) ":" existing-matchups)
-;;   (println "****")
-;;   (println "matchups remaining" (count remaining-matchups) ":" remaining-matchups)
-;;   (println "****")
-;;   (println "set schedule:" set-schedule)
-;;   (println "****")
-;;   (let [new-schedule (schedule-matchups remaining-matchups set-schedule)
-;;         scheduled-matchups (reduce concat (map second new-schedule))
-;;         unscheduled-matchups (difference (set all-matchups) (set scheduled-matchups))]
-;;     (println "new schedule:" new-schedule)
-;;     (println "matchups not scheduled:" (count unscheduled-matchups) unscheduled-matchups)))
+    (print-schedule rr-schedule)
+    (println "----------")
+
+    (doseq [schedule schedules]
+      (println "*********")
+      (print-schedule schedule)
+      (println "*********"))
+    (println "----------")
+
+
+    ;; (println (families-in-one-week? manager-schedule)))
+
+    ))
