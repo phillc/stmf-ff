@@ -1,9 +1,11 @@
 (ns stmf-ff.core
-  (:require [clojure.set :refer [difference
+  (:require [clojure.math.combinatorics :as combinatorics]
+            [clojure.set :refer [difference
                                  intersection]]))
 
 (def seeded-managers
-  ["Paul"
+  [
+   "Paul"
    "Dave"
    "Angie"
    "Brad"
@@ -16,7 +18,8 @@
    "Drew"
    "Phillip"
    "Annie"
-   "Brian"])
+   "Brian"
+   ])
 
 
 (def family-matchups
@@ -105,23 +108,36 @@
   (map #(map (partial insert-managers managers) %) schedule))
 
 (defn possible-schedules [seeded-schedule]
-  (loop [managers seeded-managers
-         remaining-rotations (count seeded-managers)
-         result []]
-    (let [schedule (manager-schedule managers seeded-schedule)]
-      (if (zero? remaining-rotations)
-        result
-        (recur
-         (into [] (rotate managers))
-         (dec remaining-rotations)
-         (conj result schedule))))))
+  (let [set-matchups family-matchups
+        remaining-managers (difference (set seeded-managers) (into #{} (reduce concat set-matchups)))]
+    ;; remaining-matchups (combinatorics/combinations remaining-managers 2)]
+    (for [manager1 remaining-managers manager2 remaining-managers :when (not= manager1 manager2)]
+
+      )
+    ))
+
+;; (loop [managers seeded-managers
+;;        remaining-rotations (count seeded-managers)
+;;        result []]
+;;   (let [schedule (manager-schedule managers seeded-schedule)]
+;;     (if (zero? remaining-rotations)
+;;       result
+;;       (recur
+;;        (into [] (rotate managers))
+;;        (dec remaining-rotations)
+;;        (conj result schedule))))))
 
 (defn print-schedule [schedule]
   (doseq [[week-number week-matchups] (map vector (drop 1 (range)) schedule)]
     (let [number-of-family (matchups-included-in family-matchups week-matchups)
           number-of-rivalries (matchups-included-in rival-matchups week-matchups)
-          flag (if (> number-of-family 2) "******" "")]
-      (println week-number week-matchups number-of-family number-of-rivalries flag))))
+          flag1 (if (> number-of-family 3) "***" "   ")
+          flag2 (condp < number-of-rivalries
+                  5 "--*--"
+                  4 "---"
+                  3 "-"
+                  "")]
+      (println week-number week-matchups number-of-family number-of-rivalries flag1 flag2))))
 
 (defn -main
   [& args]
@@ -133,10 +149,12 @@
     (print-schedule rr-schedule)
     (println "----------")
 
-    (doseq [schedule schedules]
-      (println "*********")
-      (print-schedule schedule)
-      (println "*********"))
+    ;; (doseq [schedule schedules]
+    ;;   (println "*********")
+    ;;   (print-schedule schedule)
+    ;;   (println "*********"))
+    ;; (print-schedule (first schedules))
+    (println schedules)
     (println "----------")
 
 
