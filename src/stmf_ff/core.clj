@@ -1,6 +1,7 @@
 (ns stmf-ff.core
   (:require [clojure.math.combinatorics :as combinatorics]
-            [clojure.set :refer [difference]]))
+            [clojure.set :refer [difference
+                                 intersection]]))
 
 (def managers
   ["Paul"
@@ -19,14 +20,14 @@
    "Brian"])
 
 
-(def families
+(def family-matchups
   [#{"Phillip" "Angie"}
    #{"Paul" "Stewart"}
    #{"Dave" "Annie"}
    #{"Jeff" "John"}
    #{"Drew" "Mike"}])
 
-(def rivals
+(def rival-matchups
   [#{"Phillip" "Angie"}
    #{"Phillip" "Annie"}
    #{"Phillip" "Brian"}
@@ -94,18 +95,31 @@
   (doseq [week schedule]
     (println week)))
 
+(defn matchups-included-in [matchups week]
+  (count (intersection (set matchups) (set week))))
+
+(defn all-families? [week]
+  (= (count family-matchups) (matchups-included-in family-matchups week)))
+
+(defn families-in-one-week? [schedule]
+  (some (fn [week] (all-families? week)) schedule))
+
+(defn insert-managers [managers week]
+  (set (replace managers week)))
+
 (defn -main
   [& args]
   ;; check all rivalries and families are in managers (check typos)
 
   (let [schedule (round-robin-schedule (count managers) league-weeks)
-        manager-schedule (map #(map (partial replace managers) %) schedule)]
+        manager-schedule (map #(map (partial insert-managers managers) %) schedule)]
 
     (print-schedule schedule)
     (println "*********")
     (println "manager-schedule")
     (print-schedule manager-schedule)
-    )
+    (println "*********")
+    (println (families-in-one-week? manager-schedule)))
   )
 ;; (let [all-matchups (map set (combinatorics/combinations managers 2))
 ;;       existing-matchups (reduce concat (map second set-schedule))
