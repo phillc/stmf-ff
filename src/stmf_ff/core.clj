@@ -88,15 +88,24 @@
             (recur
              (concat [(first seeds)] (rotate (rest seeds)))
              (dec remaining-rounds)
-             (conj result (map vector first-half second-half))
-             )))))
+             (conj result (map vector first-half second-half)))))))
+
+(defn print-schedule [schedule]
+  (doseq [week schedule]
+    (println week)))
 
 (defn -main
   [& args]
   ;; check all rivalries and families are in managers (check typos)
 
-  (let [schedule (round-robin-schedule (count managers) league-weeks)]
-    (println "round-robin-schedule" schedule))
+  (let [schedule (round-robin-schedule (count managers) league-weeks)
+        manager-schedule (map #(map (partial replace managers) %) schedule)]
+
+    (print-schedule schedule)
+    (println "*********")
+    (println "manager-schedule")
+    (print-schedule manager-schedule)
+    )
   )
 ;; (let [all-matchups (map set (combinatorics/combinations managers 2))
 ;;       existing-matchups (reduce concat (map second set-schedule))
