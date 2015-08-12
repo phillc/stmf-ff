@@ -101,31 +101,95 @@
 ;; (defn families-in-one-week? [schedule]
 ;;   (some (fn [week] (all-families? week)) schedule))
 
-(defn insert-managers [managers week]
-  (set (replace managers week)))
+(defn already-exists? [players matchups]
+  (some #(some players %) matchups))
 
-(defn manager-schedule [managers schedule]
-  (map #(map (partial insert-managers managers) %) schedule))
+(defn can-fit? [matchup matchups]
+  (not (already-exists? matchup matchups)))
 
-(defn possible-schedules [seeded-schedule]
-  (let [set-matchups family-matchups
-        remaining-managers (difference (set seeded-managers) (into #{} (reduce concat set-matchups)))]
-    ;; remaining-matchups (combinatorics/combinations remaining-managers 2)]
-    (for [manager1 remaining-managers manager2 remaining-managers :when (not= manager1 manager2)]
+(defn insert-managers-matchup [managers matchup]
+  (set (replace managers matchup)))
 
-      )
-    ))
+(defn insert-managers-schedule [seeds schedule]
+  (map #(map (partial insert-managers-matchup seeds) %) schedule))
 
-;; (loop [managers seeded-managers
-;;        remaining-rotations (count seeded-managers)
-;;        result []]
-;;   (let [schedule (manager-schedule managers seeded-schedule)]
-;;     (if (zero? remaining-rotations)
-;;       result
+;; (defn possible-weeks [week managers]
+;;   (let [manager (first managers)
+;;         remaining-managers (rest managers)
+;;         (for [remaining-manager remaining-managers
+;;               :let [matchup #{manager remaining-manager}]
+;;               :when (can-fit? matchup week)]
+;;           (possible-weeks (conj week matchup) (remaining-managers))
+;;           ))
+;;     ))
+
+;; (defn possible-weeks [week remaining-managers]
+;;   (let [remaining-matchups (combinatorics/combinations remaining-managers 2)
+;;         matchups (into #{} week)]
+;;     (for [pair remaining-matchups
+;;           :let [matchup (into #{} pair)]
+;;           :when (can-fit? matchup matchups)]
+;;       (do
+;;         (println "M>>" matchup)
+;;         (possible-weeks
+;;          (conj week matchup)
+;;          (remove matchup remaining-managers)))
+;;     )))
+
+(defn ensures-family? [matchup]
+  (println ">>>" matchup (if (some #(some matchup %) family-matchups)
+                           (contains? (set family-matchups) matchup)
+                           true))
+
+  (if-not (some #(some matchup %) family-matchups)
+    (contains? family-matchups matchup)))
+
+(defn possible-weeks' [remaining-managers current-week]
+  (if (zero? (count remaining-managers))
+    [current-week]
+    (let [remaining-matchups (map #(into #{} %) (combinatorics/combinations remaining-managers 2))
+          possible-matchups (filter #(can-fit? % current-week) (filter ensures-family? remaining-matchups))]
+      (apply concat (map (fn [matchup]
+                           (possible-weeks'
+                            (remove matchup remaining-managers)
+                            (conj current-week matchup)))
+                         possible-matchups)))))
+
+
+(defn possible-weeks [managers]
+  (possible-weeks' managers []))
+
+;; (for [pair remaining-matchups
+;;       :let [matchup (into #{} pair)]
+;;       :when (can-fit? matchup matchups)]
+;;   (do
+;;     (println "M>>" matchup)
+;;     (possible-weeks
+;;      (conj week matchup)
+;;      (remove matchup remaining-managers)))
+;;   ))))
+
+
+;; (defn possible-schedules [seeded-schedule]
+;;   ;; remaining-managers (difference (set seeded-managers) (into #{} (reduce concat set-matchups)))]
+;;   (loop [managers seeded-managers
+;;          ;; remaining-rotations (count seeded-managers)
+;;          manager-seeds []]
+
+;;     (let [manager (first managers)
+;;           week []]
+;;       (for [other-manager (rest managers)]
+;;         ))
+;;     (let [schedule (manager-schedule managers seeded-schedule)]
+;;       ;; (if (zero? remaining-rotations)
+;;       ;; result
 ;;       (recur
 ;;        (into [] (rotate managers))
 ;;        (dec remaining-rotations)
-;;        (conj result schedule))))))
+;;        (conj result schedule)))))
+
+(defn first-week->seeds [week]
+  (into (vector) (concat (map first week) (reverse (map second week)))))
 
 (defn print-schedule [schedule]
   (doseq [[week-number week-matchups] (map vector (drop 1 (range)) schedule)]
@@ -143,21 +207,23 @@
   [& args]
   ;; check all rivalries and families are in managers (check typos)
 
-  (let [rr-schedule (round-robin-schedule (count seeded-managers) league-weeks)
-        schedules (possible-schedules rr-schedule)]
+  (let [rr-schedule (round-robin-schedule 14 13)
+        ;; (let [rr-schedule (round-robin-schedule (count seeded-managers) league-weeks)
+
+        ;; schedules (possible-schedules rr-schedule)]
+        weeks (possible-weeks (take 14 seeded-managers))
+        seeds (take 10 (map first-week->seeds weeks))
+        manager-schedules (map #(insert-managers-schedule % rr-schedule) seeds)]
 
     (print-schedule rr-schedule)
     (println "----------")
-
-    ;; (doseq [schedule schedules]
-    ;;   (println "*********")
-    ;;   (print-schedule schedule)
-    ;;   (println "*********"))
-    ;; (print-schedule (first schedules))
-    (println schedules)
+    (println "weeks" (take 10 weeks))
     (println "----------")
+    (println "seeds" seeds)
 
-
-    ;; (println (families-in-one-week? manager-schedule)))
+    (doseq [schedule manager-schedules]
+      (println "*********")
+      (print-schedule schedule)
+      (println "*********"))
 
     ))
