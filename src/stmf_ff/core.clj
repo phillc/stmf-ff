@@ -112,6 +112,8 @@
   (possible-weeks' managers []))
 
 (defn first-week->seeds [week]
+  ;; TODO: not sure order is being preserved,
+  ;; and really to get more possibilities, need both orderings
   (into (vector) (concat (map first week) (reverse (map second week)))))
 
 (defn print-schedule [schedule]
@@ -131,10 +133,11 @@
     (some #(>= (matchups-included-in rival-matchups %) minimum-rivalries) schedule)))
 
 (defn no-non-family-rivalries-in-first-week? [schedule]
-  true)
+  (let [first-week (first schedule)]
+    (empty? (intersection (difference (set first-week) (set family-matchups)) (set rival-matchups)))))
 
 (defn everyone-has-rivalry? [schedule]
-  (let [rivalry-week-threshold 5
+  (let [rivalry-week-threshold 4
         rivalry-weeks (filter #(>= (matchups-included-in rival-matchups %) rivalry-week-threshold) schedule)
         scheduled-rivalries (intersection (set rival-matchups) (set (apply concat rivalry-weeks)))
         rivalry-participants (set (apply concat scheduled-rivalries))]
@@ -142,21 +145,19 @@
 
 (defn -main
   [& args]
-  ;; check all rivalries and families are in managers (check typos)
+  ;; TODO: check all rivalries and families are in managers (check typos)
+  ;; TODO: check all family rivalries are in rivalries
 
   (let [rr-schedule (round-robin-schedule 14 13)
         weeks (possible-weeks (take 14 seeded-managers))
         seeds (map first-week->seeds weeks)
-        manager-schedules (take 5 (filter (every-pred big-rivalry-week?
+        manager-schedules (take 10 (filter (every-pred big-rivalry-week?
                                                        no-non-family-rivalries-in-first-week?
                                                        everyone-has-rivalry?)
                                            (map #(insert-managers-schedule % rr-schedule) seeds)))]
 
     (print-schedule rr-schedule)
     (println "----------")
-    (println "weeks" (take 10 weeks))
-    (println "----------")
-    (println "seeds" (take 10 seeds))
 
     (doseq [schedule manager-schedules]
       (println "*********")
