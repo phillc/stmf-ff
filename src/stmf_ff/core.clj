@@ -80,12 +80,6 @@
 (defn matchups-included-in [matchups week]
   (count (intersection (set matchups) (set week))))
 
-;; (defn all-families? [week]
-;;   (= (count family-matchups) (matchups-included-in family-matchups week)))
-
-;; (defn families-in-one-week? [schedule]
-;;   (some (fn [week] (all-families? week)) schedule))
-
 (defn already-exists? [players matchups]
   (some #(some players %) matchups))
 
@@ -114,7 +108,6 @@
                             (conj current-week matchup)))
                          possible-matchups)))))
 
-
 (defn possible-weeks [managers]
   (possible-weeks' managers []))
 
@@ -133,12 +126,19 @@
                   "")]
       (println week-number week-matchups number-of-family number-of-rivalries flag1 flag2))))
 
-(defn minimum-rivalry-week? [schedule]
-  (let [minimum-rivalries 5]
+(defn big-rivalry-week? [schedule]
+  (let [minimum-rivalries 6]
     (some #(>= (matchups-included-in rival-matchups %) minimum-rivalries) schedule)))
 
 (defn no-non-family-rivalries-in-first-week? [schedule]
   true)
+
+(defn everyone-has-rivalry? [schedule]
+  (let [rivalry-week-threshold 5
+        rivalry-weeks (filter #(>= (matchups-included-in rival-matchups %) rivalry-week-threshold) schedule)
+        scheduled-rivalries (intersection (set rival-matchups) (set (apply concat rivalry-weeks)))
+        rivalry-participants (set (apply concat scheduled-rivalries))]
+    (= rivalry-participants (set seeded-managers))))
 
 (defn -main
   [& args]
@@ -147,7 +147,9 @@
   (let [rr-schedule (round-robin-schedule 14 13)
         weeks (possible-weeks (take 14 seeded-managers))
         seeds (map first-week->seeds weeks)
-        manager-schedules (take 10 (filter (every-pred minimum-rivalry-week? no-non-family-rivalries-in-first-week?)
+        manager-schedules (take 5 (filter (every-pred big-rivalry-week?
+                                                       no-non-family-rivalries-in-first-week?
+                                                       everyone-has-rivalry?)
                                            (map #(insert-managers-schedule % rr-schedule) seeds)))]
 
     (print-schedule rr-schedule)
