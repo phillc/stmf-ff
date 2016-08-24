@@ -5,20 +5,20 @@
 
 (def seeded-managers
   [
-   "Paul"
-   "Dave"
+   "Annie"
    "Angie"
-   "Brad"
-   "Ian"
-   "Jeff"
-   "Kris"
-   "Stewart"
-   "Mike"
    "John"
    "Drew"
-   "Phillip"
-   "Annie"
+   "Brad"
+   "Paul"
    "Brian"
+   "Ian"
+   "Jeff"
+   "Dave"
+   "Mike"
+   "Phillip"
+   "Kris"
+   "Cael"
    ])
 
 
@@ -36,26 +36,25 @@
    #{"Phillip" "Drew"}
    #{"Phillip" "Ian"}
    #{"Phillip" "Kris"}
+   #{"Phillip" "Cael"}
    #{"Paul" "Drew"}
    #{"Paul" "Jeff"}
    #{"Paul" "Mike"}
-   #{"Paul" "Stewart"}
    #{"Dave" "Angie"}
    #{"Dave" "Annie"}
    #{"Dave" "Brad"}
    #{"Dave" "Ian"}
    #{"Jeff" "Drew"}
    #{"Jeff" "John"}
-   #{"Jeff" "Stewart"}
    #{"Angie" "Annie"}
    #{"Angie" "Brian"}
    #{"Angie" "Drew"}
    #{"Angie" "Ian"}
+   #{"Angie" "Cael"}
    #{"Ian" "Annie"}
    #{"Ian" "Brad"}
    #{"Ian" "Drew"}
    #{"Brad" "Annie"}
-   #{"Stewart" "Drew"}
    #{"Drew" "Mike"}
    ])
 
