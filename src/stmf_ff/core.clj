@@ -58,7 +58,7 @@
    ])
 
 (def league-weeks 13)
-(def family-week 12)
+(def family-week-number 12)
 
 (defn rotate [coll]
   (take (count coll) (drop (dec (count coll)) (cycle coll))))
@@ -161,8 +161,12 @@
         (let [rr-schedule (round-robin-schedule 14 13)
               family-weeks (possible-family-weeks seeded-managers)
               family-seeds (map (fn [week]
-                                  (into (vector) (concat (map first week) (reverse (map second week)))))
-
+                                  ;; (let [family-week-seeds (get rr-schedule (dec family-week-number))]
+                                  ;;   (println ">>>??? -----" week)
+                                  ;;   (println ">>!!!!!" family-week-seeds)
+                                  ;;   )
+                                  (into (vector) (concat (map first week) (reverse (map second week))))
+                                  )
                                 family-weeks)
               manager-schedules (take 100 (filter (every-pred big-rivalry-week?
                                                               everyone-has-rivalry?)
@@ -170,6 +174,7 @@
 
           (print-schedule rr-schedule)
           (println "----------" (count manager-schedules))
+          (println "????" (take 2 family-seeds))
 
           (doseq [schedule manager-schedules]
             (println "*********")
