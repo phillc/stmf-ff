@@ -1,36 +1,37 @@
 (ns stmf-ff.core
   (:require [clojure.math.combinatorics :as combinatorics]
             [clojure.set :refer [difference
-                                 intersection]]))
+                                 intersection
+                                 subset?
+                                 union]]))
 
 (def seeded-managers
   [
-   "Annie"
-   "Angie"
-   "John"
-   "Drew"
+   "Jeff"
    "Brad"
    "Paul"
-   "Brian"
-   "Ian"
-   "Jeff"
-   "Dave"
-   "Mike"
    "Phillip"
-   "Kris"
+   "Mike"
+   "Angie"
+   "Brian"
+   "Dave"
    "Cael"
+   "Ian"
+   "John"
+   "Drew"
+   "Kris"
+   "Yeary"
    ])
 
 
 (def family-matchups
   [#{"Phillip" "Angie"}
-   #{"Dave" "Annie"}
    #{"Jeff" "John"}
    #{"Drew" "Mike"}])
 
 (def rival-matchups
   [#{"Phillip" "Angie"}
-   #{"Phillip" "Annie"}
+   #{"Phillip" "Yeary"}
    #{"Phillip" "Brian"}
    #{"Phillip" "Dave"}
    #{"Phillip" "Drew"}
@@ -41,24 +42,23 @@
    #{"Paul" "Jeff"}
    #{"Paul" "Mike"}
    #{"Dave" "Angie"}
-   #{"Dave" "Annie"}
    #{"Dave" "Brad"}
    #{"Dave" "Ian"}
    #{"Jeff" "Drew"}
    #{"Jeff" "John"}
-   #{"Angie" "Annie"}
+   #{"Angie" "Yeary"}
    #{"Angie" "Brian"}
    #{"Angie" "Drew"}
    #{"Angie" "Ian"}
    #{"Angie" "Cael"}
-   #{"Ian" "Annie"}
    #{"Ian" "Brad"}
    #{"Ian" "Drew"}
-   #{"Brad" "Annie"}
    #{"Drew" "Mike"}
+   #{"Cael" "Yeary"}
    ])
 
 (def league-weeks 13)
+(def family-week )
 
 (defn rotate [coll]
   (take (count coll) (drop (dec (count coll)) (cycle coll))))
@@ -119,7 +119,7 @@
   (doseq [[week-number week-matchups] (map vector (drop 1 (range)) schedule)]
     (let [number-of-family (matchups-included-in family-matchups week-matchups)
           number-of-rivalries (matchups-included-in rival-matchups week-matchups)
-          flag1 (if (> number-of-family 3) "***" "   ")
+          flag1 (if (= number-of-family (count family-matchups)) "***" "   ")
           flag2 (condp < number-of-rivalries
                   5 "--*--"
                   4 "---"
@@ -128,7 +128,7 @@
       (println week-number week-matchups number-of-family number-of-rivalries flag1 flag2))))
 
 (defn big-rivalry-week? [schedule]
-  (let [minimum-rivalries 6]
+  (let [minimum-rivalries 5]
     (some #(>= (matchups-included-in rival-matchups %) minimum-rivalries) schedule)))
 
 (defn no-non-family-rivalries-in-first-week? [schedule]
@@ -136,7 +136,7 @@
     (empty? (intersection (difference (set first-week) (set family-matchups)) (set rival-matchups)))))
 
 (defn everyone-has-rivalry? [schedule]
-  (let [rivalry-week-threshold 4
+  (let [rivalry-week-threshold 3
         rivalry-weeks (filter #(>= (matchups-included-in rival-matchups %) rivalry-week-threshold) schedule)
         scheduled-rivalries (intersection (set rival-matchups) (set (apply concat rivalry-weeks)))
         rivalry-participants (set (apply concat scheduled-rivalries))]
@@ -144,23 +144,29 @@
 
 (defn -main
   [& args]
-  ;; TODO: check all rivalries and families are in managers (check typos)
-  ;; TODO: check all family rivalries are in rivalries
+  (let [family-matchup-members (reduce union family-matchups)
+        rival-matchup-members (reduce union rival-matchups)
+        seeded-managers-members (set seeded-managers)]
+    (if-not (subset? family-matchup-members seeded-managers-members)
+      (do
+        (println "family matchups not subset of seeded managers")
+        (println (difference family-matchup-members seeded-managers-members)))
+      (if-not (subset? rival-matchup-members seeded-managers-members)
+        (do
+          (println "rivalry matchups not subset of seeded managers")
+          (println (difference rival-matchup-members seeded-managers-members)))
+        (let [rr-schedule (round-robin-schedule 14 13)
+              weeks (possible-weeks (take 14 seeded-managers))
+              seeds (map first-week->seeds weeks)
+              manager-schedules (take 10 (filter (every-pred big-rivalry-week?
+                                                             no-non-family-rivalries-in-first-week?
+                                                             everyone-has-rivalry?)
+                                                 (map #(insert-managers-schedule % rr-schedule) seeds)))]
 
-  (let [rr-schedule (round-robin-schedule 14 13)
-        weeks (possible-weeks (take 14 seeded-managers))
-        seeds (map first-week->seeds weeks)
-        manager-schedules (take 10 (filter (every-pred big-rivalry-week?
-                                                       no-non-family-rivalries-in-first-week?
-                                                       everyone-has-rivalry?)
-                                           (map #(insert-managers-schedule % rr-schedule) seeds)))]
+          (print-schedule rr-schedule)
+          (println "----------")
 
-    (print-schedule rr-schedule)
-    (println "----------")
-
-    (doseq [schedule manager-schedules]
-      (println "*********")
-      (print-schedule schedule)
-      (println "*********"))
-
-    ))
+          (doseq [schedule manager-schedules]
+            (println "*********")
+            (print-schedule schedule)
+            (println "*********")))))))
