@@ -58,7 +58,7 @@
    ])
 
 (def league-weeks 13)
-(def family-week )
+(def family-week 12)
 
 (defn rotate [coll]
   (take (count coll) (drop (dec (count coll)) (cycle coll))))
@@ -110,6 +110,13 @@
 (defn possible-weeks [managers]
   (possible-weeks' managers []))
 
+(defn possible-family-weeks [managers]
+  (let [managers-in-family (reduce union family-matchups)
+        remaining-managers (difference (set managers) managers-in-family)]
+    (println ">>>> managers in family" managers-in-family)
+    (println ">>>> remaining managers" remaining-managers)
+    (possible-weeks' remaining-managers family-matchups)))
+
 (defn first-week->seeds [week]
   ;; TODO: not sure order is being preserved,
   ;; and really to get more possibilities, need both orderings
@@ -130,10 +137,6 @@
 (defn big-rivalry-week? [schedule]
   (let [minimum-rivalries 5]
     (some #(>= (matchups-included-in rival-matchups %) minimum-rivalries) schedule)))
-
-(defn no-non-family-rivalries-in-first-week? [schedule]
-  (let [first-week (first schedule)]
-    (empty? (intersection (difference (set first-week) (set family-matchups)) (set rival-matchups)))))
 
 (defn everyone-has-rivalry? [schedule]
   (let [rivalry-week-threshold 3
@@ -156,17 +159,20 @@
           (println "rivalry matchups not subset of seeded managers")
           (println (difference rival-matchup-members seeded-managers-members)))
         (let [rr-schedule (round-robin-schedule 14 13)
-              weeks (possible-weeks (take 14 seeded-managers))
-              seeds (map first-week->seeds weeks)
-              manager-schedules (take 10 (filter (every-pred big-rivalry-week?
-                                                             no-non-family-rivalries-in-first-week?
-                                                             everyone-has-rivalry?)
-                                                 (map #(insert-managers-schedule % rr-schedule) seeds)))]
+              family-weeks (possible-family-weeks seeded-managers)
+              family-seeds (map (fn [week]
+                                  (into (vector) (concat (map first week) (reverse (map second week)))))
+
+                                family-weeks)
+              manager-schedules (take 100 (filter (every-pred big-rivalry-week?
+                                                              everyone-has-rivalry?)
+                                                  (map #(insert-managers-schedule % rr-schedule) family-seeds)))]
 
           (print-schedule rr-schedule)
-          (println "----------")
+          (println "----------" (count manager-schedules))
 
           (doseq [schedule manager-schedules]
             (println "*********")
             (print-schedule schedule)
-            (println "*********")))))))
+            (println "*********"))
+          )))))
